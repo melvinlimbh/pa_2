@@ -1,3 +1,4 @@
+from http import client
 import pathlib
 import socket
 import sys
@@ -20,13 +21,11 @@ def convert_int_to_bytes(x):
     """
     return x.to_bytes(8, "big")
 
-
 def convert_bytes_to_int(xbytes):
     """
     Convenience function to convert byte value to integer value
     """
     return int.from_bytes(xbytes, "big")
-
 
 def read_bytes(socket, length):
     """
@@ -43,7 +42,6 @@ def read_bytes(socket, length):
 
     return b"".join(buffer)
 
-
 def main(args):
     port = int(args[0]) if len(args) > 0 else 4321
     address = args[1] if len(args) > 1 else "localhost"
@@ -52,8 +50,9 @@ def main(args):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((address, port))
             s.listen()
-
+            
             client_socket, client_address = s.accept()
+            
             with client_socket:
                 while True:
                     match convert_bytes_to_int(read_bytes(client_socket, 8)):
@@ -93,6 +92,55 @@ def main(args):
                             print("Closing connection...")
                             s.close()
                             break
+                        
+                        case 3:
+                            start_time = time.time()
+                            
+                            message_len = convert_bytes_to_int(read_bytes(client_socket, 8))
+                            message = read_bytes(client_socket, message_len)
+                            print(f"Finished receiving message in {(time.time() - start_time)}s!")
+                            print(f"message size in bytes = {message_len},\nmessage = {message}")
+                           
+                            #client_socket.sendall(convert_int_to_bytes(message_len))
+
+                            ###OK HERE#####
+                            # Extract private and public key of server
+                            try:
+                                with open("auth/server_private_key.pem", mode="r", encoding="utf8") as key_file:
+                                    private_key = serialization.load_pem_private_key(
+                                        bytes(key_file.read(), encoding="utf8"), password=None)
+                                public_key = private_key.public_key()
+                            except Exception as e:
+                                print(e)
+
+                            # sign message with private key (encryption)
+                            signed_message = private_key.sign(
+                                message, # message in bytes format
+                                padding.PSS(
+                                    mgf=padding.MGF1(hashes.SHA256()),
+                                    salt_length=padding.PSS.MAX_LENGTH,
+                                ),
+                                hashes.SHA256(), # hashing algorithm used to hash the data before encryption
+                            )
+
+                            # Part 1 
+                            signed_message_len = len(signed_message) 
+                            # no need for bytes() since signed_message is alr in bytes
+                            client_socket.sendall(convert_int_to_bytes((signed_message_len)))
+                            print("first packet sent")
+                            client_socket.sendall(signed_message)
+                            print("second packet sent")
+                            
+                            # Part 2
+                            server_signed_crt = "auth/server_signed.crt"
+                            server_signed_crt_bytes = bytes(server_signed_crt, encoding = "utf8")
+                            server_signed_crt_bytes_len = len(server_signed_crt_bytes)
+                            
+                            client_socket.sendall(convert_int_to_bytes(server_signed_crt_bytes_len))
+                            print("third packet sent")
+                            client_socket.sendall((server_signed_crt_bytes))
+                            print("fourth packet sent")
+                            print(convert_bytes_to_int(server_signed_crt_bytes))
 
     except Exception as e:
         print(e)
