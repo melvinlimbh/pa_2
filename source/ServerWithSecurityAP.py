@@ -97,7 +97,8 @@ def main(args):
                             start_time = time.time()
                             
                             message_len = convert_bytes_to_int(read_bytes(client_socket, 8))
-                            message = read_bytes(client_socket, message_len)
+                            message = read_bytes(client_socket, message_len).decode("utf8")
+                            message_bytes = bytes(message, encoding="utf8")
                             print(f"Finished receiving message in {(time.time() - start_time)}s!")
                             print(f"message size in bytes = {message_len},\nmessage = {message}")
                            
@@ -108,14 +109,15 @@ def main(args):
                             try:
                                 with open("auth/server_private_key.pem", mode="r", encoding="utf8") as key_file:
                                     private_key = serialization.load_pem_private_key(
-                                        bytes(key_file.read(), encoding="utf8"), password=None)
+                                        bytes(key_file.read(), encoding="utf8"), password=None
+                                    )
                                 public_key = private_key.public_key()
                             except Exception as e:
                                 print(e)
 
                             # sign message with private key (encryption)
                             signed_message = private_key.sign(
-                                message, # message in bytes format
+                                message_bytes, # message in bytes format
                                 padding.PSS(
                                     mgf=padding.MGF1(hashes.SHA256()),
                                     salt_length=padding.PSS.MAX_LENGTH,
