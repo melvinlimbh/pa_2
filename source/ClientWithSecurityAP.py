@@ -61,18 +61,18 @@ def main(args):
                 
             # When mode = 3, client send two message packets in bytes
             s.sendall(convert_int_to_bytes(3))
-            print("In Mode 3")
+            #print("In Mode 3")
 
             m2 = "Client Request SecureStore ID"
             m1 = convert_int_to_bytes(len(m2)) #size(bytes) of m2
             s.sendall(m1)
             m2_bytes = bytes(m2, encoding="utf-8")
             s.sendall(m2_bytes)
-            print(f"---------SENT----------")
-            print("1. length of message in bytes : ", m1)
-            print("2. message : ", m2)
+            # print(f"---------SENT----------")
+            # print("1. length of message in bytes : ", m1)
+            # print("2. message : ", m2)
 
-            print("\n----------RECEIVED-----------")
+            # print("\n----------RECEIVED-----------")
 
             # m1_1 = s.recv(1024) # len(signed_message)
             # print("1. size of signed message in bytes : ", convert_bytes_to_int(m1_1))
@@ -81,7 +81,7 @@ def main(args):
 
             signed_message_len = read_bytes(s, 8)
             signed_message = read_bytes(s, convert_bytes_to_int(signed_message_len))
-            print(signed_message_len, signed_message)
+            #print(signed_message_len, signed_message)
             
             
             # m1_2 = s.recv(1024) # len(server_signed_crt)
@@ -91,7 +91,7 @@ def main(args):
 
             server_signed_crt_len = read_bytes(s, 8)
             server_signed_crt = read_bytes(s, convert_bytes_to_int(server_signed_crt_len))
-            print(server_signed_crt_len, server_signed_crt)
+            #print(server_signed_crt_len, server_signed_crt)
             
             ##################### CHECK SERVER ID ##########################
             # Read certificate
