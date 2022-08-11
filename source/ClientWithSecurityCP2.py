@@ -155,7 +155,7 @@ def main(args):
                 s.sendall(encrypted_data)
 
             filename = filename.split("/")[-1]
-            with open(f"send_files_enc/enc_{filename}_CP2", mode="wb") as fp:
+            with open(f"send_files_enc/enc_{filename}", mode="wb") as fp:
                 fp.write(encrypted_data)
            
         # Close the connection

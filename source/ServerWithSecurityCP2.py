@@ -73,9 +73,9 @@ def main(args):
                             filename = "recv_" + filename.split("/")[-1]
 
                             # Write the file with 'recv_' prefix
-                            with open(f"recv_files/{filename}_CP2", mode="wb") as fp:
+                            with open(f"recv_files/{filename}", mode="wb") as fp:
                                 fp.write(file_data)
-                            with open(f"recv_files_enc/enc_{filename}_CP2", mode="wb") as fp:
+                            with open(f"recv_files_enc/enc_{filename}", mode="wb") as fp:
                                 fp.write(encrypted_data)
                             print(f"Finished receiving file in {(time.time() - start_time)}s!")
                         case 2:
