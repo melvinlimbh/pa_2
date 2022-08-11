@@ -98,12 +98,6 @@ def main(args):
                             message_len = convert_bytes_to_int(read_bytes(client_socket, 8))
                             message = read_bytes(client_socket, message_len).decode("utf8")
                             message_bytes = bytes(message, encoding="utf8")
-                            # print(f"Finished receiving message in {(time.time() - start_time)}s!")
-                            # print(f"message size in bytes = {message_len},\nmessage = {message}")
-                           
-                            #client_socket.sendall(convert_int_to_bytes(message_len))
-
-                            ###OK HERE#####
                             # Extract private and public key of server
                             try:
                                 with open("auth/server_private_key.pem", mode="r", encoding="utf8") as key_file:
@@ -127,24 +121,17 @@ def main(args):
                             # Part 1 
                             signed_message_len = len(signed_message) 
                             # no need for bytes() since signed_message is alr in bytes
-                            client_socket.sendall(convert_int_to_bytes((signed_message_len)))
-                            #print("first packet sent")
+                            client_socket.sendall(convert_int_to_bytes((signed_message_len)))                          
                             client_socket.sendall(signed_message)
-                            #print("second packet sent")
+                            
                             
                             # Part 2
-                            # server_signed_crt = "auth/server_signed.crt"
                             f = open("auth/server_signed.crt", "rb")
                             server_signed_crt = f.read()
-
-                            # server_signed_crt_bytes = bytes(server_signed_crt, encoding = "utf8")
                             server_signed_crt_len = len(server_signed_crt)
                             
                             client_socket.sendall(convert_int_to_bytes(server_signed_crt_len))
-                            #print("third packet sent")
                             client_socket.sendall((server_signed_crt))
-                            # print("fourth packet sent")
-                            # print(convert_bytes_to_int(server_signed_crt))
 
     except Exception as e:
         print(e)

@@ -58,40 +58,19 @@ def main(args):
             # filename = input(
             #     "Enter a filename to send (enter -1 to exit):"
             # ).strip()
-                
-            # When mode = 3, client send two message packets in bytes
             s.sendall(convert_int_to_bytes(3))
-            #print("In Mode 3")
 
             m2 = "Client Request SecureStore ID"
-            m1 = convert_int_to_bytes(len(m2)) #size(bytes) of m2
+            m1 = convert_int_to_bytes(len(m2))
             s.sendall(m1)
             m2_bytes = bytes(m2, encoding="utf-8")
             s.sendall(m2_bytes)
-            # print(f"---------SENT----------")
-            # print("1. length of message in bytes : ", m1)
-            # print("2. message : ", m2)
-
-            # print("\n----------RECEIVED-----------")
-
-            # m1_1 = s.recv(1024) # len(signed_message)
-            # print("1. size of signed message in bytes : ", convert_bytes_to_int(m1_1))
-            # m2_1 = s.recv(1024) # signed_message_bytes converted to int
-            # print("2. signed authentication message : ", m2_1)
 
             signed_message_len = read_bytes(s, 8)
             signed_message = read_bytes(s, convert_bytes_to_int(signed_message_len))
-            #print(signed_message_len, signed_message)
-            
-            
-            # m1_2 = s.recv(1024) # len(server_signed_crt)
-            # print("3. size of server_sign_crt : ", convert_bytes_to_int(m1_2))
-            # m2_2 = s.recv(1024) # server_signed_crt_bytes converted to int
-            # print("4. server_signed_crt : ", m2_2)
 
             server_signed_crt_len = read_bytes(s, 8)
             server_signed_crt = read_bytes(s, convert_bytes_to_int(server_signed_crt_len))
-            #print(server_signed_crt_len, server_signed_crt)
             
             ##################### CHECK SERVER ID ##########################
             # Read certificate
@@ -101,15 +80,7 @@ def main(args):
 
             ca_public_key = ca_cert.public_key()
 
-            # Verify signature
-            #m2_2 = server_cert_raw
-
-            # f = open("auth/server_signed.crt","rb")
-            # server_cert_raw = f.read() 
-
-
             server_cert = x509.load_pem_x509_certificate(data = server_signed_crt, backend=default_backend())
-            # server_cert = x509.load_pem_x509_certificate(data = m2_2, backend=default_backend())
 
             ca_public_key.verify(
                 signature=server_cert.signature, # signature bytes to verify
@@ -128,15 +99,6 @@ def main(args):
                 ),
                 hashes.SHA256(),
             )
-            # server_public_key.verify(
-            #     m2_1,
-            #     m2_bytes,
-            #     padding.PSS(
-            #         mgf=padding.MGF1(hashes.SHA256()),
-            #         salt_length=padding.PSS.MAX_LENGTH,
-            #     ),
-            #     hashes.SHA256(),
-            # )
 
             # Check certificate validity
             assert server_cert.not_valid_before <= datetime.utcnow() <= server_cert.not_valid_after
