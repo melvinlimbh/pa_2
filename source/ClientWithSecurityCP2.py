@@ -1,0 +1,182 @@
+from http import server
+import pathlib
+import socket
+import sys
+import time
+from datetime import datetime
+import secrets
+import traceback
+
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.backends import default_backend
+
+def convert_int_to_bytes(x):
+    """
+    Convenience function to convert Python integers to a length-8 byte representation
+    """
+    return x.to_bytes(8, "big")
+
+def convert_bytes_to_int(xbytes):
+    """
+    Convenience function to convert byte value to integer value
+    """
+    return int.from_bytes(xbytes, "big")
+
+def read_bytes(socket, length):
+    """
+    Reads the specified length of bytes from the given socket and returns a bytestring
+    """
+    buffer = []
+    bytes_received = 0
+    while bytes_received < length:
+        data = socket.recv(min(length - bytes_received, 1024))
+        if not data:
+            raise Exception("Socket connection broken")
+        buffer.append(data)
+        bytes_received += len(data)
+
+    return b"".join(buffer)
+
+def main(args):
+    port = int(args[0]) if len(args) > 0 else 4321
+    server_address = args[1] if len(args) > 1 else "localhost"
+
+    start_time = time.time()
+
+    # try:
+    print("Establishing connection to server...")
+    # Connect to server
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((server_address, port))
+        print("Connected")
+
+        while True:
+            #mode 3 : AP
+            s.sendall(convert_int_to_bytes(3))
+            m2 = "Client Request SecureStore ID"
+            m1 = convert_int_to_bytes(len(m2))
+            s.sendall(m1)
+            m2_bytes = bytes(m2, encoding="utf-8")
+            s.sendall(m2_bytes)
+
+            signed_message_len = read_bytes(s, 8)
+            signed_message = read_bytes(s, convert_bytes_to_int(signed_message_len))
+
+            server_signed_crt_len = read_bytes(s, 8)
+            server_signed_crt = read_bytes(s, convert_bytes_to_int(server_signed_crt_len))
+            
+            ##################### CHECK SERVER ID ##########################
+            # Read certificate
+            f = open("auth/cacsertificate.crt", "rb")
+            ca_cert_raw = f.read()
+            ca_cert = x509.load_pem_x509_certificate(data=ca_cert_raw, backend=default_backend())          
+
+            ca_public_key = ca_cert.public_key()
+
+            # Verify signature
+            server_cert = x509.load_pem_x509_certificate(data = server_signed_crt, backend=default_backend())
+            ca_public_key.verify(
+                signature=server_cert.signature, # signature bytes to verify
+                data=server_cert.tbs_certificate_bytes, # certificate data bytes that was signed by CA
+                padding=padding.PKCS1v15(), # padding used by CA bot to sign the the server's csr
+                algorithm=server_cert.signature_hash_algorithm
+            )
+
+            server_public_key = server_cert.public_key()                        
+            server_public_key.verify(
+                signed_message,
+                m2_bytes,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH,
+                ),
+                hashes.SHA256(),
+            )
+
+            # Check certificate validity
+            assert server_cert.not_valid_before <= datetime.utcnow() <= server_cert.not_valid_after
+            #mode 3 done
+            
+            filename = input("Enter a filename to send (enter -1 to exit):").strip()
+            
+
+            #mode 4 : CP2
+
+            session_key_bytes = Fernet.generate_key()
+            session_key = Fernet(session_key_bytes)
+
+            try:
+                with open("auth/server_private_key.pem", mode="r", encoding="utf8") as key_file:
+                    private_key = serialization.load_pem_private_key(
+                        bytes(key_file.read(), encoding="utf8"), password=None
+                    )
+                    public_key = private_key.public_key()
+
+            except Exception as e: print(e)
+
+            s.sendall(convert_int_to_bytes(4))
+
+            m2_1 = public_key.encrypt(session_key_bytes,
+            padding.OAEP(
+                mgf=padding.MGF1(hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,),)
+
+            m1_1 = convert_int_to_bytes(len(m2_1))
+
+            s.sendall(m1_1)
+            s.sendall(m2_1)
+
+            #long_message = b""
+            # with open("files/image.ppm", "rb") as f:
+            #     long_message = f.read()
+            #     encrypted_long_message = session_key.encrypt(long_message)
+
+            # long_message = b"123456789"
+            # encrypted_long_message = session_key.encrypt(long_message)
+
+            # m2_2_len = len(encrypted_long_message)
+            # m1_2 = convert_int_to_bytes(m2_2_len)
+            # m2_2 = encrypted_long_message
+
+            # s.sendall(m1_2)
+            # s.sendall(m2_2)
+            # print(long_message)
+
+            if filename == "-1":
+                s.sendall(convert_int_to_bytes(2))
+                break
+
+            else :
+                while filename != "-1" and (not pathlib.Path(filename).is_file()):
+                    filename = input("Invalid filename. Please try again:")
+                    
+            
+            filename_bytes = bytes(filename, encoding="utf8")
+            # Send the filename
+            s.sendall(convert_int_to_bytes(0))
+            s.sendall(convert_int_to_bytes(len(filename_bytes)))
+            s.sendall(filename_bytes)
+
+            with open(filename, mode="rb") as fp:
+                data = fp.read()
+                s.sendall(convert_int_to_bytes(1))
+                encrypted_data = session_key.encrypt(data)
+                file_len = len(encrypted_data)
+                s.sendall(convert_int_to_bytes(file_len))
+                s.sendall(encrypted_data)
+           
+        # Close the connection
+        s.sendall(convert_int_to_bytes(2))
+        print("Closing connection...")
+
+    end_time = time.time()
+    print(f"Program took {end_time - start_time}s to run.")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
