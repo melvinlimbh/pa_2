@@ -163,7 +163,6 @@ def main(args):
                 s.sendall(convert_int_to_bytes(1))
 
                 boolean = True
-
                 while boolean:
                     line = fp.read(62)
                     if line == b"":
@@ -181,6 +180,10 @@ def main(args):
                     )
                     s.sendall(convert_int_to_bytes(len(encrypted_message)))
                     s.sendall(encrypted_message)
+
+                filename = filename.split("/")[-1]
+                with open(f"send_files_enc/enc_{filename}_CP1", mode="wb") as fp:
+                                fp.write(encrypted_message)
 
         # Close the connection
         s.sendall(convert_int_to_bytes(2))

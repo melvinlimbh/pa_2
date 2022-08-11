@@ -80,15 +80,13 @@ def main(args):
                                 print(e)
 
                             file_ls = []
-
+                            encrypted_ls = []
                             boolean = True
 
                             while boolean:
-                                file_len = convert_bytes_to_int(
-                                    read_bytes(client_socket, 8)
-                                )
+                                file_len = convert_bytes_to_int(read_bytes(client_socket, 8))
                                 file_data = read_bytes(client_socket, file_len)
-
+                                
                                 if file_data == b"end":
                                     boolean = False
                                     break
@@ -101,20 +99,27 @@ def main(args):
                                         label=None,
                                     ),
                                 )
+                                encrypted_ls.append(file_data)
                                 file_ls.append(decrypted_message)
-                            
                             file_output = b"".join(file_ls)
+                            encrypted_output = b"".join(encrypted_ls)
+                            #print(encrypted_output)
 
                             filename = "recv_" + filename.split("/")[-1]
 
                             # Write the file with 'recv_' prefix
                             with open(
-                                f"recv_files/{filename}", mode="wb"
+                                f"recv_files/{filename}_CP1", mode="wb"
                             ) as fp:
-                                fp.write(file_data)
+                                fp.write(file_output)
+                            
+                            with open(f"recv_files_enc/enc_{filename}_CP1", mode="wb") as fp:
+                                fp.write(encrypted_output)
+
                             print(
                                 f"Finished receiving file in {(time.time() - start_time)}s!"
                             )
+                            
                         case 2:
                             # Close the connection
                             # Python context used here so no need to explicitly close the socket
