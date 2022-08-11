@@ -109,11 +109,11 @@ def main(args):
 
                             # Write the file with 'recv_' prefix
                             with open(
-                                f"recv_files/{filename}_CP1", mode="wb"
+                                f"recv_files/{filename}", mode="wb"
                             ) as fp:
                                 fp.write(file_output)
                             
-                            with open(f"recv_files_enc/enc_{filename}_CP1", mode="wb") as fp:
+                            with open(f"recv_files_enc/enc_{filename}", mode="wb") as fp:
                                 fp.write(encrypted_output)
 
                             print(

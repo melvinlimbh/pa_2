@@ -162,6 +162,8 @@ def main(args):
                 # data = fp.read()
                 s.sendall(convert_int_to_bytes(1))
 
+                message_ls = []
+
                 boolean = True
                 while boolean:
                     line = fp.read(62)
@@ -178,12 +180,15 @@ def main(args):
                             label=None,
                         ),
                     )
+                    message_ls.append(encrypted_message)
                     s.sendall(convert_int_to_bytes(len(encrypted_message)))
                     s.sendall(encrypted_message)
 
+                message_output = b"".join(message_ls)
+
                 filename = filename.split("/")[-1]
-                with open(f"send_files_enc/enc_{filename}_CP1", mode="wb") as fp:
-                                fp.write(encrypted_message)
+                with open(f"send_files_enc/enc_{filename}", mode="wb") as fp:
+                                fp.write(message_output)
 
         # Close the connection
         s.sendall(convert_int_to_bytes(2))
