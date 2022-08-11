@@ -131,22 +131,6 @@ def main(args):
             s.sendall(m1_1)
             s.sendall(m2_1)
 
-            #long_message = b""
-            # with open("files/image.ppm", "rb") as f:
-            #     long_message = f.read()
-            #     encrypted_long_message = session_key.encrypt(long_message)
-
-            # long_message = b"123456789"
-            # encrypted_long_message = session_key.encrypt(long_message)
-
-            # m2_2_len = len(encrypted_long_message)
-            # m1_2 = convert_int_to_bytes(m2_2_len)
-            # m2_2 = encrypted_long_message
-
-            # s.sendall(m1_2)
-            # s.sendall(m2_2)
-            # print(long_message)
-
             if filename == "-1":
                 s.sendall(convert_int_to_bytes(2))
                 break
@@ -169,6 +153,10 @@ def main(args):
                 file_len = len(encrypted_data)
                 s.sendall(convert_int_to_bytes(file_len))
                 s.sendall(encrypted_data)
+
+            filename = filename.split("/")[-1]
+            with open(f"send_files_enc/enc_{filename}", mode="wb") as fp:
+                fp.write(encrypted_data)
            
         # Close the connection
         s.sendall(convert_int_to_bytes(2))

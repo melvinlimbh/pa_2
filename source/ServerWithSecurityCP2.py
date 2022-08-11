@@ -66,24 +66,18 @@ def main(args):
                             # If the packet is for transferring a chunk of the file
                             start_time = time.time()
                             file_len = convert_bytes_to_int(read_bytes(client_socket, 8))
-
-                            print("file length")
-                            print(file_len)
                             encrypted_data = read_bytes(client_socket, file_len) #with session key
-                            print("encrypted file data")
 
                             file_data = session_key.decrypt(encrypted_data)
 
                             filename = "recv_" + filename.split("/")[-1]
 
                             # Write the file with 'recv_' prefix
-                            with open(
-                                f"recv_files/{filename}", mode="wb"
-                            ) as fp:
+                            with open(f"recv_files/{filename}", mode="wb") as fp:
                                 fp.write(file_data)
-                            print(
-                                f"Finished receiving file in {(time.time() - start_time)}s!"
-                            )
+                            with open(f"recv_files_enc/enc_{filename}", mode="wb") as fp:
+                                fp.write(encrypted_data)
+                            print(f"Finished receiving file in {(time.time() - start_time)}s!")
                         case 2:
                             # Close the connection
                             # Python context used here so no need to explicitly close the socket
